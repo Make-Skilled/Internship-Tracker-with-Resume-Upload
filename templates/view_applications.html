@@ -1,0 +1,163 @@
+{% extends "base.html" %}
+
+{% block title %}View Applications - Internship Tracker{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <div class="flex justify-between items-center">
+        <h1 class="text-3xl font-bold text-gray-900">Applications</h1>
+        <a href="{{ url_for('organization_dashboard') }}" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-md text-sm font-medium">
+            Back to Dashboard
+        </a>
+    </div>
+
+    {% if applications %}
+        <div class="bg-white shadow rounded-lg">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h2 class="text-xl font-semibold text-gray-900">
+                    Applications for: {{ applications[0].internship.title }}
+                </h2>
+            </div>
+            
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Student</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Applied</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        {% for application in applications %}
+                        <tr>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div>
+                                    <div class="text-sm font-medium text-gray-900">{{ application.student.full_name }}</div>
+                                    <div class="text-sm text-gray-500">{{ application.student.email }}</div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                {{ application.applied_at.strftime('%Y-%m-%d %H:%M') }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                                    {% if application.status == 'Selected' %}bg-green-100 text-green-800
+                                    {% elif application.status == 'Rejected' %}bg-red-100 text-red-800
+                                    {% elif application.status == 'Viewed' %}bg-yellow-100 text-yellow-800
+                                    {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                    {{ application.status }}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                <div class="flex space-x-2">
+                                    <button onclick="viewApplication(this)" 
+                                            data-cover-letter="{{ application.cover_letter|e }}"
+                                            data-resume-url="{{ application.resume_url }}"
+                                            data-student-name="{{ application.student.full_name }}"
+                                            class="text-blue-600 hover:text-blue-900 bg-blue-100 hover:bg-blue-200 px-3 py-1 rounded-md">
+                                        View Details
+                                    </button>
+                                    {% if application.status == 'Pending' %}
+                                    <a href="{{ url_for('update_application_status', application_id=application.id, status='Viewed') }}" 
+                                       class="text-yellow-600 hover:text-yellow-900 bg-yellow-100 hover:bg-yellow-200 px-3 py-1 rounded-md">
+                                        Mark Viewed
+                                    </a>
+                                    {% endif %}
+                                    {% if application.status in ['Pending', 'Viewed'] %}
+                                    <a href="{{ url_for('update_application_status', application_id=application.id, status='Selected') }}" 
+                                       class="text-green-600 hover:text-green-900 bg-green-100 hover:bg-green-200 px-3 py-1 rounded-md">
+                                        Select
+                                    </a>
+                                    <a href="{{ url_for('update_application_status', application_id=application.id, status='Rejected') }}" 
+                                       class="text-red-600 hover:text-red-900 bg-red-100 hover:bg-red-200 px-3 py-1 rounded-md"
+                                       onclick="return confirm('Are you sure you want to reject this application?')">
+                                        Reject
+                                    </a>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    {% else %}
+        <div class="bg-white shadow rounded-lg p-8 text-center">
+            <div class="text-gray-500">
+                <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                <h3 class="mt-2 text-sm font-medium text-gray-900">No applications yet</h3>
+                <p class="mt-1 text-sm text-gray-500">Students haven't applied to this internship yet.</p>
+            </div>
+        </div>
+    {% endif %}
+</div>
+
+<!-- Application Details Modal -->
+<div id="applicationModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+    <div class="flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-lg p-8 max-w-2xl w-full max-h-screen overflow-y-auto">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-gray-900">Application Details</h2>
+                <button onclick="closeApplicationModal()" class="text-gray-400 hover:text-gray-600" aria-label="Close modal">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            <div id="applicationDetails">
+                <!-- Application details will be loaded here -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function viewApplication(button) {
+    // Get data from the button's data attributes
+    const coverLetter = button.getAttribute('data-cover-letter');
+    const resumeUrl = button.getAttribute('data-resume-url');
+    const studentName = button.getAttribute('data-student-name');
+    
+    // Display the application details
+    document.getElementById('applicationDetails').innerHTML = `
+        <div class="space-y-6">
+            <div>
+                <h3 class="text-lg font-semibold text-gray-900 mb-2">Student: ${studentName}</h3>
+            </div>
+            <div>
+                <h3 class="text-lg font-semibold text-gray-900 mb-2">Cover Letter</h3>
+                <div class="bg-gray-50 p-4 rounded-md">
+                    <p class="text-gray-700 whitespace-pre-wrap">${coverLetter}</p>
+                </div>
+            </div>
+            <div>
+                <h3 class="text-lg font-semibold text-gray-900 mb-2">Resume</h3>
+                <a href="${resumeUrl}" target="_blank" class="inline-flex items-center px-4 py-2 bg-primary hover:bg-secondary text-white rounded-md transition duration-300">
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                    </svg>
+                    Download Resume
+                </a>
+            </div>
+        </div>
+    `;
+    document.getElementById('applicationModal').classList.remove('hidden');
+}
+
+function closeApplicationModal() {
+    document.getElementById('applicationModal').classList.add('hidden');
+}
+
+// Close modal when clicking outside
+document.getElementById('applicationModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeApplicationModal();
+    }
+});
+</script>
+{% endblock %} 
