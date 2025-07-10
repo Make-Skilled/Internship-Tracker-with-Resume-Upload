@@ -1,6 +1,6 @@
 # Internship Tracker
 
-A full-stack web application for managing internship opportunities, built with Flask, Tailwind CSS, and Supabase.
+A full-stack web application for managing internship opportunities, built with Flask, Tailwind CSS, and MongoDB.
 
 ## Features
 
@@ -13,7 +13,7 @@ A full-stack web application for managing internship opportunities, built with F
 ### 🔐 Authentication
 
 - **Admin**: Static credentials (username: "admin", password: "admin123")
-- **Students & Organizations**: Supabase-based authentication
+- **Students & Organizations**: Local authentication
 - **Organizations**: Require admin approval before login
 
 ### 🚀 Core Functionality
@@ -39,8 +39,8 @@ A full-stack web application for managing internship opportunities, built with F
 
 - **Frontend**: HTML, Tailwind CSS, JavaScript
 - **Backend**: Python Flask
-- **Database**: Supabase (PostgreSQL)
-- **Storage**: Supabase Storage (for resume uploads)
+- **Database**: MongoDB Atlas (with GridFS for file storage)
+- **Storage**: MongoDB GridFS (for resume uploads)
 
 ## Project Structure
 
@@ -48,7 +48,6 @@ A full-stack web application for managing internship opportunities, built with F
 Internship Tracker/
 ├── app.py                 # Main Flask application
 ├── requirements.txt       # Python dependencies
-├── schema.sql            # Supabase database schema
 ├── README.md             # This file
 └── templates/            # HTML templates
     ├── base.html         # Base template with navigation
@@ -72,7 +71,7 @@ Internship Tracker/
 ### 1. Prerequisites
 
 - Python 3.8 or higher
-- Supabase account
+- MongoDB Atlas account
 - Git
 
 ### 2. Clone and Setup
@@ -95,26 +94,21 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### 3. Supabase Setup
+### 3. MongoDB Setup
 
-1. Create a new project at [supabase.com](https://supabase.com)
-2. Go to SQL Editor and run the contents of `schema.sql`
-3. Go to Settings > API to get your project URL and anon key
-4. Update the Supabase configuration in `app.py`:
+1. Create a new cluster at [mongodb.com](https://www.mongodb.com)
+2. Get your connection string (URI)
+3. Update the MongoDB configuration in `app.py`:
 
 ```python
-SUPABASE_URL = "your-supabase-project-url"
-SUPABASE_KEY = "your-supabase-anon-key"
+MONGO_URI = "your-mongodb-connection-uri"
 ```
 
-### 4. Supabase Storage Setup
+### 4. GridFS Setup
 
-1. Go to Storage in your Supabase dashboard
-2. Create a new bucket called "resumes"
-3. Set the bucket to public (for demo purposes)
-4. Configure CORS if needed
+No additional setup is required. The application will automatically use GridFS to store and retrieve resumes in MongoDB.
 
-### 5. Run the Application
+### 4. Run the Application
 
 ```bash
 # Set Flask environment variables
@@ -158,20 +152,21 @@ The application will be available at `http://localhost:5000`
 4. Upload resume and write cover letter
 5. Track application status
 
-## Database Schema
+## Database Schema & File Storage
 
-The application uses the following tables:
+The application uses the following collections:
 
-- **organization**: Organization details and approval status
-- **student**: Student account information
-- **internship**: Posted internship opportunities
-- **application**: Student applications with status tracking
+- **organizations**: Organization details and approval status
+- **students**: Student account information
+- **internships**: Posted internship opportunities
+- **applications**: Student applications with status tracking (each application stores a reference to a resume file in GridFS)
+
+Resume files are stored in MongoDB using GridFS. When a student applies, their resume is uploaded directly to the database. Organizations can download resumes securely via the application interface.
 
 ## Security Notes
 
 - Passwords are stored in plain text for demo purposes
 - In production, use proper password hashing (bcrypt)
-- Enable Row Level Security (RLS) in Supabase for production
 - Implement proper file upload validation
 - Add CSRF protection
 
@@ -194,13 +189,12 @@ The application uses the following tables:
 ### Common Issues
 
 1. **Database Connection Error**
-   - Verify Supabase URL and key
-   - Check if tables are created
+   - Verify MongoDB URI
+   - Check if collections are created
 
 2. **File Upload Issues**
-   - Ensure Supabase Storage bucket exists
-   - Check file size limits
-   - Verify CORS settings
+   - Ensure your MongoDB Atlas cluster has sufficient storage
+   - Check file size limits (default max is 16MB per file in GridFS)
 
 3. **Template Errors**
    - Check if all template files are in the templates folder

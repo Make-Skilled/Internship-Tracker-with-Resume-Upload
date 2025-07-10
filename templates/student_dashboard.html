@@ -49,10 +49,14 @@
                         </div>
                         
                         <div class="ml-4">
-                            <a href="{{ url_for('apply_internship', internship_id=internship.id) }}" 
-                               class="bg-primary hover:bg-secondary text-white px-4 py-2 rounded-md text-sm font-medium">
-                                Apply Now
-                            </a>
+                            {% if internship._id|string in applied_internship_ids %}
+                                <button class="bg-gray-400 text-white px-4 py-2 rounded-md text-sm font-medium" disabled>Applied</button>
+                            {% else %}
+                                <a href="{{ url_for('apply_internship', internship_id=internship._id) }}" 
+                                   class="bg-primary hover:bg-secondary text-white px-4 py-2 rounded-md text-sm font-medium">
+                                    Apply Now
+                                </a>
+                            {% endif %}
                         </div>
                     </div>
                 </div>
