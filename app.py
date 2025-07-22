@@ -290,12 +290,21 @@ def view_applications(internship_id):
 def update_application_status(application_id, status):
     if session.get('user_type') != 'organization':
         return redirect(url_for('organization_login'))
+    allowed_statuses = ['pending', 'viewed', 'shortlisted', 'rejected', 'accepted']
+    status = status.lower()
+    if status not in allowed_statuses:
+        flash('Invalid status', 'error')
+        application = db.applications.find_one({'_id': ObjectId(application_id)})
+        if application:
+            return redirect(url_for('view_applications', internship_id=application['internship_id']))
+        else:
+            return redirect(url_for('organization_dashboard'))
     application = db.applications.find_one({'_id': ObjectId(application_id)})
     if not application:
         flash('Application not found', 'error')
         return redirect(url_for('organization_dashboard'))
     db.applications.update_one({'_id': ObjectId(application_id)}, {'$set': {'status': status}})
-    flash(f'Application status updated to {status}', 'success')
+    flash(f'Application status updated to {status.capitalize()}', 'success')
     return redirect(url_for('view_applications', internship_id=application['internship_id']))
 
 @app.route('/student/applications')
